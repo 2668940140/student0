@@ -37,6 +37,7 @@ WordCount *word_counts = NULL;
 
 /* The maximum length of each word in a file */
 #define MAX_WORD_LEN 64
+#define MAX_FILE_NUM 64
 
 /*
  * 3.1.1 Total Word Count
@@ -107,7 +108,7 @@ int main (int argc, char *argv[]) {
   // Freq Mode: outputs the frequency of each word
   bool freq_mode = false;
 
-  FILE *infile = NULL;
+  FILE *infile[MAX_FILE_NUM];
 
   // Variables for command line argument parsing
   int i;
@@ -145,21 +146,27 @@ int main (int argc, char *argv[]) {
 
   if ((argc - optind) < 1) {
     // No input file specified, instead, read from STDIN instead.
-    infile = stdin;
+    infile[0] = stdin;
   } else {
     // At least one file specified. Useful functions: fopen(), fclose().
     // The first file can be found at argv[optind]. The last file can be
     // found at argv[argc-1].
-    infile = fopen(argv[argc - 1], "r");
-    if (infile == NULL)
+    for (int i = 0; i < MAX_FILE_NUM && optind + i < argc; i++)
     {
-      fprintf(stderr, "Cannot open the file.");
-      return 1;
+      infile[i] = fopen(argv[optind + i], "r");
+      if (infile[i] == NULL)
+      {
+        fprintf(stderr, "Cannot open the file.");
+        return 1;
+      }
     }
   }
 
   if (count_mode) {
-    total_words = num_words(infile);
+    for (int i = 0; i < MAX_FILE_NUM && infile[i] != NULL; i++)
+    {
+      total_words += num_words(infile[i]);
+    }
     printf("The total number of words is: %i\n", total_words);
   } else {
     wordcount_sort(&word_counts, wordcount_less);
@@ -168,12 +175,15 @@ int main (int argc, char *argv[]) {
     fprint_words(word_counts, stdout);
   }
 
-  if (infile != stdin)
+  for (int i = 0; i < MAX_FILE_NUM && infile[i] != NULL; i++)
   {
-    if (fclose(infile) != 0)
+    if (infile[i] != stdin)
     {
-      fprintf(stderr, "File close with error");
-      return 1;
+      if (fclose(infile[i]) != 0)
+      {
+        fprintf(stderr, "File close with error");
+        return 1;
+      }
     }
   }
 
