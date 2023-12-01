@@ -76,6 +76,31 @@ int num_words(FILE* infile) {
  * and 0 otherwise.
  */
 int count_words(WordCount **wclist, FILE *infile) {
+  static char word[MAX_WORD_LEN + 1];
+  int idx = 0;
+
+  char ch;
+  while ((ch = fgetc(infile)) && !feof(infile))
+  {
+    if (isalpha(ch))
+    {
+      word[idx++] = tolower(ch);
+      if (idx > MAX_WORD_LEN) return 1;
+    }
+    else
+    {
+      word[idx] = '\0';
+      if (idx > 1)
+      {
+        add_word(wclist, word);
+      }
+      idx = 0;
+    }
+  }
+  if (idx > 1)
+  {
+    add_word(wclist, word);
+  }
   return 0;
 }
 
@@ -84,7 +109,13 @@ int count_words(WordCount **wclist, FILE *infile) {
  * Useful function: strcmp().
  */
 static bool wordcount_less(const WordCount *wc1, const WordCount *wc2) {
-  return 0;
+  if (wc1->count < wc2->count) return true;
+  else if(wc1->count > wc2->count) return false;
+  else
+  {
+    int cmp_res = strcmp(wc1->word, wc2->word);
+    return cmp_res < 0;
+  }
 }
 
 // In trying times, displays a helpful message.
@@ -169,8 +200,11 @@ int main (int argc, char *argv[]) {
     }
     printf("The total number of words is: %i\n", total_words);
   } else {
+    for (int i = 0; i < MAX_FILE_NUM && infile[i] != NULL; i++)
+    {
+      count_words(&word_counts, infile[i]);
+    }
     wordcount_sort(&word_counts, wordcount_less);
-
     printf("The frequencies of each word are: \n");
     fprint_words(word_counts, stdout);
   }
